@@ -1,6 +1,6 @@
 from django.conf import settings
 from django.db import models
-from apps.catalog.models import Product
+from catalog.models import Product
 
 
 class RecommendationModel(models.Model):

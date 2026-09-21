@@ -1,5 +1,5 @@
 import networkx as nx
-from apps.interactions.models import Interaction
+from interactions.models import Interaction
 
 
 def build_interaction_graph(min_weight: float = 0.0) -> nx.Graph:

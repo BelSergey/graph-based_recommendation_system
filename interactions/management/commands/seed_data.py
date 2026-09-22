@@ -1,8 +1,8 @@
 import random
 from django.core.management.base import BaseCommand
 from django.contrib.auth import get_user_model
-from apps.catalog.models import Category, Product
-from apps.interactions.models import Interaction, InteractionType
+from catalog.models import Category, Product
+from interactions.models import Interaction, InteractionType
 
 User = get_user_model()
 
@@ -30,11 +30,13 @@ class Command(BaseCommand):
             for i in range(options['products'])
         ]
 
-        users = [
-            User.objects.create_user(username=f'user_{i}', password='test1234')
-            for i in range(options['users'])
-        ]
-
+        users = []
+        for i in range(options['users']):
+            user, created = User.objects.get_or_create(username=f'user_{i}')
+            if created:
+                user.set_password('test1234')
+                user.save()
+            users.append(user)
 
         for user in users:
             preferred_category = random.choice(categories)

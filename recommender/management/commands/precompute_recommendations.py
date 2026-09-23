@@ -11,12 +11,12 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument('--algorithm', required=True)
-        parser.add_argument('--version', default='1')
+        parser.add_argument('--model-version', default='1')
         parser.add_argument('--top-k', type=int, default=10)
 
     def handle(self, *args, **options):
         model_record = RecommendationModel.objects.get(
-            algorithm=options['algorithm'], version=options['version']
+            algorithm=options['algorithm'], version=options['model_version']
         )
 
         recommender_cls = get_recommender_class(options['algorithm'])

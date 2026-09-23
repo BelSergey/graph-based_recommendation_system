@@ -11,11 +11,11 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument('--algorithm', required=True)
-        parser.add_argument('--version', default='1')
+        parser.add_argument('--model-version', default='1')
 
     def handle(self, *args, **options):
         algorithm = options['algorithm']
-        version = options['version']
+        version = options['model_version']
 
         graph = build_interaction_graph()
         recommender_cls = get_recommender_class(algorithm)

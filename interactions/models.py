@@ -5,9 +5,9 @@ from catalog.models import Product
 
 
 class InteractionType(models.TextChoices):
-    VIEW = 'view', 'Просмотр'
-    CART = 'cart', 'В корзину'
-    PURCHASE = 'purchase', 'Покупка'
+    VIEW = "view", "Просмотр"
+    CART = "cart", "В корзину"
+    PURCHASE = "purchase", "Покупка"
 
 
 WEIGHTS = {
@@ -26,8 +26,8 @@ class Interaction(models.Model):
 
     class Meta:
         indexes = [
-            models.Index(fields=['user', 'timestamp']),
-            models.Index(fields=['product']),
+            models.Index(fields=["user", "timestamp"]),
+            models.Index(fields=["product"]),
         ]
 
     def save(self, *args, **kwargs):

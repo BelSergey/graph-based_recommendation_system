@@ -7,13 +7,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('interactions', '0002_initial'),
+        ("interactions", "0002_initial"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='interaction',
-            name='timestamp',
+            model_name="interaction",
+            name="timestamp",
             field=models.DateTimeField(default=django.utils.timezone.now),
         ),
     ]

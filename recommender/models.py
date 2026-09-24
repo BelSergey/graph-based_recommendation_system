@@ -12,10 +12,10 @@ class RecommendationModel(models.Model):
     is_active = models.BooleanField(default=False)
 
     class Meta:
-        unique_together = ('algorithm', 'version')
+        unique_together = ("algorithm", "version")
 
     def __str__(self):
-        return f'{self.algorithm} v{self.version}'
+        return f"{self.algorithm} v{self.version}"
 
 
 class RecommendationResult(models.Model):
@@ -26,5 +26,5 @@ class RecommendationResult(models.Model):
     computed_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        indexes = [models.Index(fields=['user', 'model'])]
-        ordering = ['-score']
+        indexes = [models.Index(fields=["user", "model"])]
+        ordering = ["-score"]

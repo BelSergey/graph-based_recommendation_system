@@ -6,7 +6,7 @@ from recommender.models import RecommendationModel
 class ProductSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
-        fields = ['id', 'title', 'category', 'price']
+        fields = ["id", "title", "category", "price"]
 
 
 class RecommendationItemSerializer(serializers.Serializer):
@@ -17,8 +17,11 @@ class RecommendationItemSerializer(serializers.Serializer):
 class AlgorithmSerializer(serializers.ModelSerializer):
     class Meta:
         model = RecommendationModel
-        fields = ['algorithm', 'version', 'trained_at', 'metrics', 'is_active']
+        fields = ["algorithm", "version", "trained_at", "metrics", "is_active"]
+
 
 class RecommendationQuerySerializer(serializers.Serializer):
     user_id = serializers.IntegerField(required=True)
-    top_k = serializers.IntegerField(required=False, default=10, min_value=1, max_value=100)
+    top_k = serializers.IntegerField(
+        required=False, default=10, min_value=1, max_value=100
+    )

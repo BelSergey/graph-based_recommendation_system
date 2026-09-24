@@ -1,0 +1,16 @@
+.venv/
+venv/
+__pycache__/
+*.pyc
+.git/
+.idea/
+.vscode/
+.env
+db.sqlite3
+staticfiles/
+media/
+storage/models/*.pkl
+ml-100k/
+postman/
+project_code_dump.txt
+collect_code.py

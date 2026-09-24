@@ -27,9 +27,11 @@ class Command(BaseCommand):
         file_path = os.path.join(storage_dir, f'{algorithm}_v{version}.pkl')
         recommender.save_state(file_path)
 
+
+        RecommendationModel.objects.filter(algorithm=algorithm).update(is_active=False)
         RecommendationModel.objects.update_or_create(
             algorithm=algorithm, version=version,
-            defaults={'file_path': file_path},
+            defaults={'file_path': file_path, 'is_active': True},
         )
 
-        self.stdout.write(self.style.SUCCESS(f'Модель {algorithm} v{version} обучена'))
+        self.stdout.write(self.style.SUCCESS(f'Модель {algorithm} v{version} обучена и активирована'))

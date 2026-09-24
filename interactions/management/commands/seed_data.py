@@ -1,11 +1,20 @@
 import random
+from datetime import timedelta
 from django.core.management.base import BaseCommand
 from django.contrib.auth import get_user_model
+from django.utils import timezone
 from catalog.models import Category, Product
 from interactions.models import Interaction, InteractionType
 
 User = get_user_model()
 
+def random_past_timestamp(days_back: int = 180):
+    delta = timedelta(
+        days=random.randint(0, days_back),
+        hours=random.randint(0, 23),
+        minutes=random.randint(0, 59),
+    )
+    return timezone.now() - delta
 
 class Command(BaseCommand):
     help = 'Генерирует синтетические данные для графа рекомендаций'
@@ -50,6 +59,9 @@ class Command(BaseCommand):
                     [InteractionType.VIEW, InteractionType.CART, InteractionType.PURCHASE],
                     weights=[0.7, 0.2, 0.1],
                 )[0]
-                Interaction.objects.create(user=user, product=product, type=itype)
+                Interaction.objects.create(
+                    user=user, product=product, type=itype,
+                    timestamp=random_past_timestamp(),
+                )
 
         self.stdout.write(self.style.SUCCESS('Синтетические данные созданы'))

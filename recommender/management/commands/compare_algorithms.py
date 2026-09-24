@@ -121,3 +121,11 @@ class Command(BaseCommand):
                 f'  NDCG@{k}      = {avg_ndcg:.4f}'
             )
         )
+
+        RecommendationModel.objects.filter(algorithm=algorithm).update(
+            metrics={
+                f'precision@{k}': round(avg_precision, 4),
+                f'recall@{k}': round(avg_recall, 4),
+                f'ndcg@{k}': round(avg_ndcg, 4),
+            }
+        )

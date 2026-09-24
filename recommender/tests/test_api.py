@@ -45,7 +45,7 @@ class RecommendationAPITestCase(APITestCase):
         url = reverse('recommendations')
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(response.data['error'], 'user_id is required')
+        self.assertIn('user_id', response.data)
 
     def test_recommendations_no_model_found(self):
         """Проверка ошибки 404, если нет ни одной обученной модели."""

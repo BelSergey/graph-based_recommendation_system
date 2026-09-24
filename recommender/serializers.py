@@ -18,3 +18,7 @@ class AlgorithmSerializer(serializers.ModelSerializer):
     class Meta:
         model = RecommendationModel
         fields = ['algorithm', 'version', 'trained_at', 'metrics', 'is_active']
+
+class RecommendationQuerySerializer(serializers.Serializer):
+    user_id = serializers.IntegerField(required=True)
+    top_k = serializers.IntegerField(required=False, default=10, min_value=1, max_value=100)

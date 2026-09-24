@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.db import models
+from django.utils import timezone
 from catalog.models import Product
 
 
@@ -21,7 +22,7 @@ class Interaction(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     type = models.CharField(max_length=16, choices=InteractionType.choices)
     weight = models.FloatField(editable=False)
-    timestamp = models.DateTimeField(auto_now_add=True)
+    timestamp = models.DateTimeField(default=timezone.now)
 
     class Meta:
         indexes = [

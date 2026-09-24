@@ -3,18 +3,19 @@ from rest_framework.response import Response
 from rest_framework import status
 from catalog.models import Product
 from recommender.models import RecommendationModel, RecommendationResult
-from recommender.serializers import AlgorithmSerializer
+from recommender.serializers import AlgorithmSerializer, RecommendationQuerySerializer
 
 
 class RecommendationView(APIView):
 
     def get(self, request):
-        user_id = request.query_params.get('user_id')
-        algorithm = request.query_params.get('algorithm')
-        top_k = int(request.query_params.get('top_k', 10))
+        serializer = RecommendationQuerySerializer(data=request.query_params)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        if not user_id:
-            return Response({'error': 'user_id is required'}, status=status.HTTP_400_BAD_REQUEST)
+        user_id = serializer.validated_data['user_id']
+        top_k = serializer.validated_data['top_k']
+        algorithm = request.query_params.get('algorithm')
 
         model_qs = RecommendationModel.objects.filter(algorithm=algorithm) if algorithm \
             else RecommendationModel.objects.filter(is_active=True)

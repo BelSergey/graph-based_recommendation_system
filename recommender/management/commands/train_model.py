@@ -1,6 +1,9 @@
 import os
-from django.core.management.base import BaseCommand
+
 from django.conf import settings
+from django.core.management import BaseCommand
+from django.db import transaction
+
 from recommender.graph_builder import build_interaction_graph
 from recommender.registry import get_recommender_class
 from recommender.models import RecommendationModel
@@ -27,12 +30,20 @@ class Command(BaseCommand):
         file_path = os.path.join(storage_dir, f"{algorithm}_v{version}.pkl")
         recommender.save_state(file_path)
 
-        RecommendationModel.objects.filter(algorithm=algorithm).update(is_active=False)
-        RecommendationModel.objects.update_or_create(
-            algorithm=algorithm,
-            version=version,
-            defaults={"file_path": file_path, "is_active": True},
-        )
+        with transaction.atomic():
+            RecommendationModel.objects.filter(
+                algorithm=algorithm,
+                is_active=True,
+            ).update(is_active=False)
+
+            RecommendationModel.objects.update_or_create(
+                algorithm=algorithm,
+                version=version,
+                defaults={
+                    "file_path": file_path,
+                    "is_active": True,
+                },
+            )
 
         self.stdout.write(
             self.style.SUCCESS(f"Модель {algorithm} v{version} обучена и активирована")

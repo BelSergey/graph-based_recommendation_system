@@ -10,6 +10,7 @@ class RecommendationModel(models.Model):
     file_path = models.CharField(max_length=255)
     metrics = models.JSONField(default=dict, blank=True)
     is_active = models.BooleanField(default=False)
+    parameters = models.JSONField(default=dict)
 
     class Meta:
         unique_together = ("algorithm", "version")

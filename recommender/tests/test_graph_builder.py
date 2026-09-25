@@ -1,58 +1,116 @@
+
+from datetime import datetime, timezone
+
 from django.test import TestCase
+
 from catalog.models import Category, Product
 from interactions.models import Interaction, InteractionType
 from recommender.graph_builder import build_interaction_graph
 from users.models import User
 
 
-class GraphBuilderTestCase(TestCase):
+class InteractionGraphTestCase(TestCase):
     def setUp(self):
-        self.category = Category.objects.create(name="Электроника")
-        self.product_a = Product.objects.create(
-            title="Товар A", category=self.category, price=100
+        self.user_1 = User.objects.create_user(
+            username="user1"
         )
-        self.product_b = Product.objects.create(
-            title="Товар B", category=self.category, price=200
+        self.user_2 = User.objects.create_user(
+            username="user2"
         )
-        self.user = User.objects.create_user(username="alice", password="test1234")
 
-    def test_creates_nodes_and_edge(self):
-        Interaction.objects.create(
-            user=self.user, product=self.product_a, type=InteractionType.VIEW
+        self.category = Category.objects.create(
+            name="Электроника"
         )
+
+        self.product_1 = Product.objects.create(
+            title="Товар 1",
+            category=self.category,
+            price=100,
+        )
+
+        self.product_2 = Product.objects.create(
+            title="Товар 2",
+            category=self.category,
+            price=200,
+        )
+
+        timestamp = datetime(
+            2024,
+            1,
+            1,
+            tzinfo=timezone.utc,
+        )
+
+        Interaction.objects.create(
+            user=self.user_1,
+            product=self.product_1,
+            type=InteractionType.VIEW,
+            timestamp=timestamp,
+        )
+
+        Interaction.objects.create(
+            user=self.user_1,
+            product=self.product_1,
+            type=InteractionType.CART,
+            timestamp=timestamp,
+        )
+
+        Interaction.objects.create(
+            user=self.user_2,
+            product=self.product_2,
+            type=InteractionType.PURCHASE,
+            timestamp=timestamp,
+        )
+
+    def test_graph_contains_user_and_product_nodes(self):
         graph = build_interaction_graph()
 
-        self.assertIn(f"u_{self.user.id}", graph.nodes)
-        self.assertIn(f"p_{self.product_a.id}", graph.nodes)
-        self.assertTrue(graph.has_edge(f"u_{self.user.id}", f"p_{self.product_a.id}"))
+        self.assertIn(
+            f"u_{self.user_1.id}",
+            graph,
+        )
+        self.assertIn(
+            f"p_{self.product_1.id}",
+            graph,
+        )
 
-    def test_repeated_interactions_sum_weight(self):
-        Interaction.objects.create(
-            user=self.user, product=self.product_a, type=InteractionType.VIEW
-        )
-        Interaction.objects.create(
-            user=self.user, product=self.product_a, type=InteractionType.PURCHASE
-        )
+    def test_graph_contains_interaction_edges(self):
         graph = build_interaction_graph()
 
-        edge_weight = graph[f"u_{self.user.id}"][f"p_{self.product_a.id}"]["weight"]
-        # view (1.0) + purchase (5.0) = 6.0
-        self.assertEqual(edge_weight, 6.0)
-
-    def test_no_edge_between_unrelated_user_and_product(self):
-        Interaction.objects.create(
-            user=self.user, product=self.product_a, type=InteractionType.VIEW
+        self.assertTrue(
+            graph.has_edge(
+                f"u_{self.user_1.id}",
+                f"p_{self.product_1.id}",
+            )
         )
+
+    def test_weights_are_summed_for_same_user_product_pair(self):
         graph = build_interaction_graph()
 
-        self.assertFalse(graph.has_edge(f"u_{self.user.id}", f"p_{self.product_b.id}"))
+        weight = graph[
+            f"u_{self.user_1.id}"
+        ][
+            f"p_{self.product_1.id}"
+        ]["weight"]
 
-    def test_min_weight_filter_removes_weak_edges(self):
-        Interaction.objects.create(
-            user=self.user,
-            product=self.product_a,
-            type=InteractionType.VIEW,  # weight=1.0
+        self.assertEqual(weight, 4.0)
+
+    def test_min_weight_filters_edges(self):
+        graph = build_interaction_graph(
+            min_weight=5.0
         )
-        graph = build_interaction_graph(min_weight=2.0)
 
-        self.assertFalse(graph.has_edge(f"u_{self.user.id}", f"p_{self.product_a.id}"))
+        self.assertFalse(
+            graph.has_edge(
+                f"u_{self.user_1.id}",
+                f"p_{self.product_1.id}",
+            )
+        )
+
+        self.assertTrue(
+            graph.has_edge(
+                f"u_{self.user_2.id}",
+                f"p_{self.product_2.id}",
+            )
+        )
+

@@ -21,5 +21,5 @@ class AlgorithmSerializer(serializers.ModelSerializer):
 
 
 class RecommendationQuerySerializer(serializers.Serializer):
-    user_id = serializers.IntegerField(required=True, min_value=1)
+    user_id = serializers.IntegerField(required=True, min_value=1,)
     top_k = serializers.IntegerField(required=False, default=10, min_value=1, max_value=100)

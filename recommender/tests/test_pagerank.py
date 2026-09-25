@@ -12,10 +12,10 @@ def build_test_graph():
     который вообще никак не связан с этим кластером.
     """
     graph = nx.Graph()
-    graph.add_edge('u_1', 'p_10', weight=5.0)
-    graph.add_edge('u_2', 'p_10', weight=5.0)
-    graph.add_edge('u_2', 'p_20', weight=5.0)
-    graph.add_edge('u_3', 'p_30', weight=5.0) 
+    graph.add_edge("u_1", "p_10", weight=5.0)
+    graph.add_edge("u_2", "p_10", weight=5.0)
+    graph.add_edge("u_2", "p_20", weight=5.0)
+    graph.add_edge("u_3", "p_30", weight=5.0)
     return graph
 
 

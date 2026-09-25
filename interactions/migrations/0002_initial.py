@@ -10,22 +10,28 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ('interactions', '0001_initial'),
+        ("interactions", "0001_initial"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='interaction',
-            name='user',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL),
+            model_name="interaction",
+            name="user",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL
+            ),
         ),
         migrations.AddIndex(
-            model_name='interaction',
-            index=models.Index(fields=['user', 'timestamp'], name='interaction_user_id_b8c059_idx'),
+            model_name="interaction",
+            index=models.Index(
+                fields=["user", "timestamp"], name="interaction_user_id_b8c059_idx"
+            ),
         ),
         migrations.AddIndex(
-            model_name='interaction',
-            index=models.Index(fields=['product'], name='interaction_product_b22e8d_idx'),
+            model_name="interaction",
+            index=models.Index(
+                fields=["product"], name="interaction_product_b22e8d_idx"
+            ),
         ),
     ]

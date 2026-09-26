@@ -28,3 +28,10 @@ class BaseRecommender(ABC):
     def load_state(self, path: str) -> None:
         with open(path, "rb") as f:
             self.__dict__.update(pickle.load(f))
+
+    def recommend_many(
+        self,
+        user_ids: list[int],
+        top_k: int = 10,
+    ) -> dict[int, list[tuple[int, float]]]:
+        return {user_id: self.recommend(user_id, top_k=top_k) for user_id in user_ids}

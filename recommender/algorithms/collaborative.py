@@ -8,6 +8,7 @@ class CollaborativeGraphRecommender(BaseRecommender):
 
     def __init__(self):
         self.graph: nx.Graph | None = None
+        self.recommend_calls = 0
 
     def fit(self, graph: nx.Graph) -> None:
         self.graph = graph
@@ -15,11 +16,19 @@ class CollaborativeGraphRecommender(BaseRecommender):
     def _jaccard(self, set_a: set, set_b: set) -> float:
         if not set_a or not set_b:
             return 0.0
+
         intersection = len(set_a & set_b)
         union = len(set_a | set_b)
+
         return intersection / union if union else 0.0
 
-    def recommend(self, user_id: int, top_k: int = 10) -> list[tuple[int, float]]:
+    def recommend(
+        self,
+        user_id: int,
+        top_k: int = 10,
+    ) -> list[tuple[int, float]]:
+        self.recommend_calls += 1
+
         user_node = f"u_{user_id}"
         if self.graph is None or user_node not in self.graph:
             return []

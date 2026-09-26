@@ -1,4 +1,3 @@
-
 from datetime import datetime, timezone
 
 from django.test import TestCase
@@ -11,16 +10,10 @@ from users.models import User
 
 class InteractionGraphTestCase(TestCase):
     def setUp(self):
-        self.user_1 = User.objects.create_user(
-            username="user1"
-        )
-        self.user_2 = User.objects.create_user(
-            username="user2"
-        )
+        self.user_1 = User.objects.create_user(username="user1")
+        self.user_2 = User.objects.create_user(username="user2")
 
-        self.category = Category.objects.create(
-            name="Электроника"
-        )
+        self.category = Category.objects.create(name="Электроника")
 
         self.product_1 = Product.objects.create(
             title="Товар 1",
@@ -87,18 +80,12 @@ class InteractionGraphTestCase(TestCase):
     def test_weights_are_summed_for_same_user_product_pair(self):
         graph = build_interaction_graph()
 
-        weight = graph[
-            f"u_{self.user_1.id}"
-        ][
-            f"p_{self.product_1.id}"
-        ]["weight"]
+        weight = graph[f"u_{self.user_1.id}"][f"p_{self.product_1.id}"]["weight"]
 
         self.assertEqual(weight, 4.0)
 
     def test_min_weight_filters_edges(self):
-        graph = build_interaction_graph(
-            min_weight=5.0
-        )
+        graph = build_interaction_graph(min_weight=5.0)
 
         self.assertFalse(
             graph.has_edge(
@@ -113,4 +100,3 @@ class InteractionGraphTestCase(TestCase):
                 f"p_{self.product_2.id}",
             )
         )
-

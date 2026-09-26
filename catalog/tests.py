@@ -55,5 +55,3 @@ class ProductModelTestCase(TestCase):
 
         self.assertEqual(self.category.products.count(), 1)
         self.assertEqual(self.category.products.first(), product)
-
-

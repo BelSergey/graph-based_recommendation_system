@@ -1,4 +1,3 @@
-
 from datetime import datetime, timezone
 
 from django.test import TestCase
@@ -25,9 +24,7 @@ class InteractionModelTestCase(TestCase):
             user=self.user,
             product=self.product,
             type=InteractionType.VIEW,
-            timestamp=datetime(
-                2024, 1, 1, 12, 0, tzinfo=timezone.utc
-            ),
+            timestamp=datetime(2024, 1, 1, 12, 0, tzinfo=timezone.utc),
         )
 
         self.assertEqual(interaction.weight, WEIGHTS[InteractionType.VIEW])
@@ -38,9 +35,7 @@ class InteractionModelTestCase(TestCase):
             user=self.user,
             product=self.product,
             type=InteractionType.CART,
-            timestamp=datetime(
-                2024, 1, 1, 12, 0, tzinfo=timezone.utc
-            ),
+            timestamp=datetime(2024, 1, 1, 12, 0, tzinfo=timezone.utc),
         )
 
         self.assertEqual(interaction.weight, 3.0)
@@ -50,17 +45,13 @@ class InteractionModelTestCase(TestCase):
             user=self.user,
             product=self.product,
             type=InteractionType.PURCHASE,
-            timestamp=datetime(
-                2024, 1, 1, 12, 0, tzinfo=timezone.utc
-            ),
+            timestamp=datetime(2024, 1, 1, 12, 0, tzinfo=timezone.utc),
         )
 
         self.assertEqual(interaction.weight, 5.0)
 
     def test_historical_timestamp_is_preserved(self):
-        timestamp = datetime(
-            1997, 1, 1, 12, 30, tzinfo=timezone.utc
-        )
+        timestamp = datetime(1997, 1, 1, 12, 30, tzinfo=timezone.utc)
 
         interaction = Interaction.objects.create(
             user=self.user,
@@ -81,9 +72,7 @@ class InteractionModelTestCase(TestCase):
             user=self.user,
             product=self.product,
             type=InteractionType.VIEW,
-            timestamp=datetime(
-                2024, 1, 1, tzinfo=timezone.utc
-            ),
+            timestamp=datetime(2024, 1, 1, tzinfo=timezone.utc),
         )
 
         interaction.type = InteractionType.PURCHASE
@@ -91,4 +80,3 @@ class InteractionModelTestCase(TestCase):
         interaction.refresh_from_db()
 
         self.assertEqual(interaction.weight, 5.0)
-

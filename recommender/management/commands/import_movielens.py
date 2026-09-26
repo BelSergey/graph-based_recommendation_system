@@ -1,9 +1,8 @@
 import os
 import csv
-from datetime import datetime
+from datetime import datetime, timezone as dt_timezone
 from django.core.management.base import BaseCommand
 from django.contrib.auth import get_user_model
-from django.utils.timezone import make_aware
 from catalog.models import Category, Product
 from interactions.models import Interaction, InteractionType
 
@@ -75,8 +74,7 @@ class Command(BaseCommand):
                 if old_u_id not in user_id_map or old_i_id not in product_id_map:
                     continue
 
-                dt = datetime.fromtimestamp(int(timestamp))
-                dt_aware = make_aware(dt)
+                dt_aware = datetime.fromtimestamp(int(timestamp), tz=dt_timezone.utc)
 
                 interactions_to_create.append(
                     Interaction(

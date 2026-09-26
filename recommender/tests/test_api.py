@@ -11,9 +11,7 @@ from users.models import User
 
 class RecommendationAPITestCase(APITestCase):
     def setUp(self):
-        self.category = Category.objects.create(
-            name="Электроника"
-        )
+        self.category = Category.objects.create(name="Электроника")
 
         self.product_1 = Product.objects.create(
             title="Смартфон",
@@ -185,9 +183,7 @@ class RecommendationAPITestCase(APITestCase):
 
 class AlgorithmListAPITestCase(APITestCase):
     def setUp(self):
-        self.category = Category.objects.create(
-            name="Электроника"
-        )
+        self.category = Category.objects.create(name="Электроника")
 
         self.user = User.objects.create_user(
             username="testuser",

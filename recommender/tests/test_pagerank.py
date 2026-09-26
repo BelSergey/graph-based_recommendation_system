@@ -1,4 +1,3 @@
-
 import networkx as nx
 from django.test import SimpleTestCase
 
@@ -20,7 +19,10 @@ def build_test_graph():
 
 class PageRankRecommenderTestCase(SimpleTestCase):
     def setUp(self):
-        self.recommender = PageRankRecommender()
+        self.recommender = PageRankRecommender(
+            max_iter=100,
+            tol=1e-6,
+        )
         self.recommender.fit(build_test_graph())
 
     def test_algorithm_name(self):
@@ -96,4 +98,3 @@ class PageRankRecommenderTestCase(SimpleTestCase):
         self.assertIsNotNone(self.recommender.graph)
         self.assertIn("u_1", self.recommender.graph)
         self.assertIn("p_10", self.recommender.graph)
-

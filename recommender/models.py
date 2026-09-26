@@ -14,6 +14,13 @@ class RecommendationModel(models.Model):
 
     class Meta:
         unique_together = ("algorithm", "version")
+        constraints = [
+            models.UniqueConstraint(
+                fields=["algorithm"],
+                condition=models.Q(is_active=True),
+                name="unique_active_model_per_algorithm",
+            ),
+        ]
 
     def __str__(self):
         return f"{self.algorithm} v{self.version}"
@@ -27,5 +34,13 @@ class RecommendationResult(models.Model):
     computed_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        indexes = [models.Index(fields=["user", "model"])]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "model", "product"],
+                name="unique_recommendation_result",
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["user", "model"]),
+        ]
         ordering = ["-score"]

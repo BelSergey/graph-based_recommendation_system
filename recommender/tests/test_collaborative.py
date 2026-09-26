@@ -1,4 +1,3 @@
-
 import networkx as nx
 from django.test import SimpleTestCase
 

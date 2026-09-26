@@ -1,4 +1,3 @@
-
 from django.test import SimpleTestCase
 
 from recommender.serializers import RecommendationQuerySerializer
@@ -18,9 +17,7 @@ class RecommendationQuerySerializerTestCase(SimpleTestCase):
         self.assertEqual(serializer.validated_data["top_k"], 10)
 
     def test_top_k_default(self):
-        serializer = RecommendationQuerySerializer(
-            data={"user_id": 1}
-        )
+        serializer = RecommendationQuerySerializer(data={"user_id": 1})
 
         self.assertTrue(serializer.is_valid())
         self.assertEqual(serializer.validated_data["top_k"], 10)
@@ -32,16 +29,12 @@ class RecommendationQuerySerializerTestCase(SimpleTestCase):
         self.assertIn("user_id", serializer.errors)
 
     def test_zero_user_id_is_invalid(self):
-        serializer = RecommendationQuerySerializer(
-            data={"user_id": 0}
-        )
+        serializer = RecommendationQuerySerializer(data={"user_id": 0})
 
         self.assertFalse(serializer.is_valid())
 
     def test_negative_user_id_is_invalid(self):
-        serializer = RecommendationQuerySerializer(
-            data={"user_id": -1}
-        )
+        serializer = RecommendationQuerySerializer(data={"user_id": -1})
 
         self.assertFalse(serializer.is_valid())
 
@@ -74,4 +67,3 @@ class RecommendationQuerySerializerTestCase(SimpleTestCase):
         )
 
         self.assertTrue(serializer.is_valid())
-

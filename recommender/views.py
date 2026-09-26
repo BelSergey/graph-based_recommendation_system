@@ -14,7 +14,7 @@ class RecommendationView(APIView):
 
         user_id = serializer.validated_data["user_id"]
         top_k = serializer.validated_data["top_k"]
-        algorithm = request.query_params.get("algorithm")
+        algorithm = serializer.validated_data.get("algorithm")
 
         model_qs = (
             RecommendationModel.objects.filter(algorithm=algorithm)

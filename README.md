@@ -10,12 +10,14 @@ PostgreSQL + NetworkX, с возможностью переключения ме
 - [Архитектура](#архитектура)
 - [Стек технологий](#стек-технологий)
 - [Алгоритмы рекомендаций](#алгоритмы-рекомендаций)
+- [Результаты эксперимента](#результаты-эксперимента)
 - [Быстрый старт (Docker)](#быстрый-старт-docker)
 - [Локальная разработка (без Docker)](#локальная-разработка-без-docker)
 - [Переменные окружения](#переменные-окружения)
 - [Management-команды](#management-команды)
 - [API](#api)
 - [Тестирование](#тестирование)
+- [Проверка проекта](#проверка-проекта)
 - [Структура проекта](#структура-проекта)
 
 ## Архитектура
@@ -73,9 +75,54 @@ management-командах.
 | **Collaborative Filtering** (граф, коэффициент Жаккара) | Поиск похожих пользователей через общих соседей 2-го порядка | Просто и быстро, легко объяснить | Хуже работает при малом числе пересечений (холодный старт) |
 
 Метрики качества (Precision@K, Recall@K, NDCG@K) считаются на
-хронологическом train/test split — модель обучается на всех
-взаимодействиях пользователя кроме последних N%, которые используются как
-эталон для оценки (см. `compare_algorithms`).
+хронологическом train/test split. По умолчанию последние 20% взаимодействий
+каждого пользователя выделяются в test, а оставшиеся 80% используются для
+построения обучающего графа. Пользователи с историей менее 5 взаимодействий
+целиком остаются в train, поскольку для них отдельная test-выборка слишком
+мала. Реализация находится в `compare_algorithms`.
+
+## Результаты эксперимента
+
+Эксперимент выполнен на датасете **MovieLens 100K** после импорта в модели
+Django. В импортированной выборке: **943 пользователя, 1682 фильма и
+100 000 взаимодействий**. Для оценки использовался хронологический split с
+`test_ratio=0.2` и `K=10`. Фактические размеры выборок после применения
+правила для пользователей с малой историей: **79 619 train** и **20 381
+test** взаимодействие.
+
+### Качество
+
+| Алгоритм | Precision@10 | Recall@10 | NDCG@10 |
+|---|---:|---:|---:|
+| PageRank | 0.1238 | 0.0825 | 0.1437 |
+| Collaborative Graph | 0.1416 | 0.0964 | 0.1646 |
+
+В этом эксперименте Collaborative Graph дал на **0.0178** больше Precision,
+на **0.0139** больше Recall и на **0.0209** больше NDCG по сравнению с
+PageRank. Это разница именно для данной выборки, параметров и способа
+оценки; она не является гарантией для других датасетов.
+
+### Время
+
+Сравнительный эксперимент выполнялся так: один раз строился train/test split,
+далее строился граф только из train, после чего рекомендации для тестовых
+пользователей рассчитывались параллельно через `ProcessPoolExecutor`.
+
+| Алгоритм | Время эксперимента |
+|---|---:|
+| PageRank | 35.54 сек. |
+| Collaborative Graph | 22.65 сек. |
+
+Отдельно измерено полное предвычисление top-10 рекомендаций для всех 943
+пользователей, включая запись **9 430 результатов** каждого алгоритма в БД:
+
+| Алгоритм | Время precompute | Сохранено |
+|---|---:|---:|
+| PageRank | 51.20 сек. | 9 430 |
+| Collaborative Graph | 24.40 сек. | 9 430 |
+
+В API выдача берётся из `RecommendationResult`, поэтому эти вычисления
+выполняются заранее, а не на каждый HTTP-запрос.
 
 ## Быстрый старт (Docker)
 
@@ -101,11 +148,13 @@ docker compose exec web python manage.py createsuperuser
 # наполнить БД синтетическими данными
 docker compose exec web python manage.py seed_data --users 200 --products 500
 
-# обучить модели и предвычислить рекомендации
-docker compose exec web python manage.py train_model --algorithm=pagerank
-docker compose exec web python manage.py train_model --algorithm=collaborative
-docker compose exec web python manage.py precompute_recommendations --algorithm=pagerank
-docker compose exec web python manage.py precompute_recommendations --algorithm=collaborative
+# обучить актуальные версии моделей
+docker compose exec web python manage.py train_model --algorithm=pagerank --model-version=latest
+docker compose exec web python manage.py train_model --algorithm=collaborative --model-version=latest
+
+# предвычислить top-10 для всех пользователей
+docker compose exec web python manage.py precompute_recommendations --algorithm=pagerank --model-version=latest --top-k=10
+docker compose exec web python manage.py precompute_recommendations --algorithm=collaborative --model-version=latest --top-k=10
 ```
 
 Приложение доступно на `http://localhost/` (через nginx), админка — на
@@ -164,13 +213,19 @@ python manage.py runserver
 | `train_model --algorithm=<name> --model-version=<v>` | Обучает модель, сохраняет состояние в `storage/models/`, помечает как активную |
 | `precompute_recommendations --algorithm=<name> --model-version=<v> --top-k=N` | Пересчитывает и кэширует рекомендации для всех пользователей в БД |
 | `compare_algorithms --algorithm=<name> --k=N` | Хронологический train/test split, расчёт Precision@K/Recall@K/NDCG@K |
-| `run_experiment --k=N` | Полный цикл: обучает все зарегистрированные алгоритмы и сравнивает их метрики |
+| `run_experiment --k=N` | Обучает реализованные алгоритмы PageRank и Collaborative Graph и сравнивает их метрики |
 
 Пример полного цикла:
 
 ```bash
 python manage.py seed_data --users 300 --products 600
 python manage.py run_experiment --k 10
+
+# Для реального датасета MovieLens 100K:
+python manage.py import_movielens --path ml-100k
+python manage.py run_experiment --k 10
+python manage.py precompute_recommendations --algorithm=pagerank --model-version=latest --top-k=10
+python manage.py precompute_recommendations --algorithm=collaborative --model-version=latest --top-k=10
 ```
 
 ## API
@@ -193,7 +248,7 @@ curl "http://localhost/api/recommendations/?user_id=1&algorithm=pagerank&top_k=5
 ```json
 {
   "algorithm": "pagerank",
-  "version": "1",
+  "version": "latest",
   "results": [
     {"product": {"id": 42, "title": "Товар 42", "price": "1999.00"}, "score": 0.031},
     ...
@@ -225,6 +280,26 @@ docker compose exec web python manage.py test
 - `recommender/tests/test_graph_builder.py` — построение графа из БД
 - `recommender/tests/test_pagerank.py`, `test_collaborative.py` — алгоритмы на синтетических графах
 - `recommender/tests/test_api.py` — интеграционные тесты API
+- `recommender/tests/test_evaluation.py` — Precision@K, Recall@K, NDCG@K
+- `recommender/tests/test_models.py`, `test_serializers.py`, `test_registry.py` — модели, сериализаторы и реестр алгоритмов
+
+## Проверка проекта
+
+Перед финальной версией проекта выполнены проверки:
+
+```text
+flake8 .
+# без ошибок
+
+python manage.py test
+# 68 тестов, OK
+
+python manage.py check
+# без ошибок
+
+python manage.py makemigrations --check --dry-run
+# No changes detected
+```
 
 ## Структура проекта
 

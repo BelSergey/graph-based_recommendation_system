@@ -54,25 +54,22 @@ class Command(BaseCommand):
                 continue
 
             split_idx = int(len(user_ints) * (1 - test_ratio))
-            train_interactions.extend(user_ints[:split_idx])
-            test_interactions.extend(user_ints[split_idx:])
+            user_train = user_ints[:split_idx]
+            user_test = user_ints[split_idx:]
+
+            train_interactions.extend(user_train)
+            test_interactions.extend(user_test)
 
             # --- 3.3: диагностика пересечений train/test по товару ---
-            train_products = {
-                i.product_id for i in train_interactions if i.user_id == user.id
-            }
-            test_products = {
-                i.product_id for i in test_interactions if i.user_id == user.id
-            }
+            train_products = {i.product_id for i in user_train}
+            test_products = {i.product_id for i in user_test}
 
             overlap = train_products & test_products
             if overlap:
-                self.stdout.write(
-                    self.style.WARNING(
-                        f"User {user.id}: {len(overlap)} товаров пересекаются между train и test "
-                        f"(вероятно, повторные Interaction с одним товаром в разное время)"
-                    )
-                )
+                self.stdout.write(self.style.WARNING(
+                    f"User {user.id}: {len(overlap)} товаров пересекаются между train и test "
+                    f"(вероятно, повторные Interaction с одним товаром в разное время)"
+                ))
 
         if not test_interactions:
             self.stdout.write(

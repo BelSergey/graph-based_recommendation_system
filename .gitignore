@@ -215,3 +215,8 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Project-generated files
+storage/models/*.pkl
+project_code_dump.txt
+collect_code.py

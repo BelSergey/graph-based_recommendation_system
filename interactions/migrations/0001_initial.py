@@ -9,18 +9,42 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ('catalog', '0001_initial'),
+        ("catalog", "0001_initial"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='Interaction',
+            name="Interaction",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('type', models.CharField(choices=[('view', 'Просмотр'), ('cart', 'В корзину'), ('purchase', 'Покупка')], max_length=16)),
-                ('weight', models.FloatField(editable=False)),
-                ('timestamp', models.DateTimeField(auto_now_add=True)),
-                ('product', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='catalog.product')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "type",
+                    models.CharField(
+                        choices=[
+                            ("view", "Просмотр"),
+                            ("cart", "В корзину"),
+                            ("purchase", "Покупка"),
+                        ],
+                        max_length=16,
+                    ),
+                ),
+                ("weight", models.FloatField(editable=False)),
+                ("timestamp", models.DateTimeField(auto_now_add=True)),
+                (
+                    "product",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="catalog.product",
+                    ),
+                ),
             ],
         ),
     ]

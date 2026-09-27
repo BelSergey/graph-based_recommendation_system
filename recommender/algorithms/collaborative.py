@@ -4,7 +4,7 @@ from .base import BaseRecommender
 
 
 class CollaborativeGraphRecommender(BaseRecommender):
-    algorithm_name = 'collaborative'
+    algorithm_name = "collaborative"
 
     def __init__(self):
         self.graph: nx.Graph | None = None
@@ -20,7 +20,7 @@ class CollaborativeGraphRecommender(BaseRecommender):
         return intersection / union if union else 0.0
 
     def recommend(self, user_id: int, top_k: int = 10) -> list[tuple[int, float]]:
-        user_node = f'u_{user_id}'
+        user_node = f"u_{user_id}"
         if self.graph is None or user_node not in self.graph:
             return []
 
@@ -38,11 +38,9 @@ class CollaborativeGraphRecommender(BaseRecommender):
             if similarity == 0:
                 continue
             for product in other_products - target_products:
-                weight = self.graph[other_user][product]['weight']
+                weight = self.graph[other_user][product]["weight"]
                 scored_products[product] += similarity * weight
 
-        result = [
-            (int(node[2:]), score) for node, score in scored_products.items()
-        ]
+        result = [(int(node[2:]), score) for node, score in scored_products.items()]
         result.sort(key=lambda x: x[1], reverse=True)
         return result[:top_k]

@@ -10,39 +10,77 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ('catalog', '0001_initial'),
+        ("catalog", "0001_initial"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='RecommendationModel',
+            name="RecommendationModel",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('algorithm', models.CharField(max_length=32)),
-                ('version', models.CharField(max_length=32)),
-                ('trained_at', models.DateTimeField(auto_now_add=True)),
-                ('file_path', models.CharField(max_length=255)),
-                ('metrics', models.JSONField(blank=True, default=dict)),
-                ('is_active', models.BooleanField(default=False)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("algorithm", models.CharField(max_length=32)),
+                ("version", models.CharField(max_length=32)),
+                ("trained_at", models.DateTimeField(auto_now_add=True)),
+                ("file_path", models.CharField(max_length=255)),
+                ("metrics", models.JSONField(blank=True, default=dict)),
+                ("is_active", models.BooleanField(default=False)),
             ],
             options={
-                'unique_together': {('algorithm', 'version')},
+                "unique_together": {("algorithm", "version")},
             },
         ),
         migrations.CreateModel(
-            name='RecommendationResult',
+            name="RecommendationResult",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('score', models.FloatField()),
-                ('computed_at', models.DateTimeField(auto_now_add=True)),
-                ('model', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='recommender.recommendationmodel')),
-                ('product', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='catalog.product')),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("score", models.FloatField()),
+                ("computed_at", models.DateTimeField(auto_now_add=True)),
+                (
+                    "model",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="recommender.recommendationmodel",
+                    ),
+                ),
+                (
+                    "product",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="catalog.product",
+                    ),
+                ),
+                (
+                    "user",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
             options={
-                'ordering': ['-score'],
-                'indexes': [models.Index(fields=['user', 'model'], name='recommender_user_id_c24af8_idx')],
+                "ordering": ["-score"],
+                "indexes": [
+                    models.Index(
+                        fields=["user", "model"], name="recommender_user_id_c24af8_idx"
+                    )
+                ],
             },
         ),
     ]

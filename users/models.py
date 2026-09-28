@@ -3,6 +3,8 @@ from django.db import models
 
 
 class User(AbstractUser):
+    """Пользователь системы рекомендаций."""
+
     preferred_category = models.ForeignKey(
         "catalog.Category",
         null=True,

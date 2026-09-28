@@ -1,27 +1,23 @@
 import networkx as nx
 from interactions.models import Interaction
+from django.db.models import Sum
 
 
 def build_interaction_graph(min_weight: float = 0.0) -> nx.Graph:
-    """
-    Строит bipartite-граф: узлы 'u_<id>' — пользователи, 'p_<id>' — товары.
-    Вес ребра = сумма весов взаимодействий между парой.
-    """
-    graph = nx.Graph()
+    """Строит взвешенный двудольный граф из взаимодействий."""
+    graph: nx.Graph = nx.Graph()
 
-    interactions = Interaction.objects.select_related("user", "product").all()
+    aggregated = Interaction.objects.values("user_id", "product_id").annotate(
+        total_weight=Sum("weight")
+    )
 
-    for interaction in interactions:
-        u_node = f"u_{interaction.user_id}"
-        p_node = f"p_{interaction.product_id}"
+    for row in aggregated:
+        u_node = f"u_{row['user_id']}"
+        p_node = f"p_{row['product_id']}"
 
         graph.add_node(u_node, bipartite=0, type="user")
         graph.add_node(p_node, bipartite=1, type="product")
-
-        if graph.has_edge(u_node, p_node):
-            graph[u_node][p_node]["weight"] += interaction.weight
-        else:
-            graph.add_edge(u_node, p_node, weight=interaction.weight)
+        graph.add_edge(u_node, p_node, weight=float(row["total_weight"]))
 
     if min_weight > 0:
         edges_to_remove = [

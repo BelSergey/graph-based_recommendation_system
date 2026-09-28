@@ -6,15 +6,18 @@ from recommender.serializers import AlgorithmSerializer, RecommendationQuerySeri
 
 
 class RecommendationView(APIView):
+    """Возвращает предвычисленные рекомендации для пользователя."""
 
-    def get(self, request):
+    def get(self, request) -> Response:
+        """GET /api/recommendations/ — top-k рекомендаций для пользователя."""
+
         serializer = RecommendationQuerySerializer(data=request.query_params)
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         user_id = serializer.validated_data["user_id"]
         top_k = serializer.validated_data["top_k"]
-        algorithm = request.query_params.get("algorithm")
+        algorithm = serializer.validated_data.get("algorithm")
 
         model_qs = (
             RecommendationModel.objects.filter(algorithm=algorithm)
@@ -53,9 +56,9 @@ class RecommendationView(APIView):
 
 
 class AlgorithmListView(APIView):
-    """GET /api/algorithms/ — список доступных обученных моделей."""
+    """Возвращает список обученных моделей."""
 
-    def get(self, request):
+    def get(self, request) -> Response:
         models_qs = RecommendationModel.objects.all().order_by(
             "algorithm", "-trained_at"
         )

@@ -26,6 +26,7 @@ services:
       - static_volume:/app/staticfiles
       - media_volume:/app/media
       - ./storage:/app/storage
+      - ./ml-100k:/app/ml-100k:ro
     depends_on:
       db:
         condition: service_healthy

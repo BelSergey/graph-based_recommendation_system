@@ -9,13 +9,18 @@ PostgreSQL + NetworkX, с возможностью переключения ме
 
 - [Архитектура](#архитектура)
 - [Стек технологий](#стек-технологий)
+- [Модель данных](#модель-данных)
 - [Алгоритмы рекомендаций](#алгоритмы-рекомендаций)
+- [Production и оценка](#production-и-оценка)
+- [Результаты эксперимента](#результаты-эксперимента)
 - [Быстрый старт (Docker)](#быстрый-старт-docker)
 - [Локальная разработка (без Docker)](#локальная-разработка-без-docker)
 - [Переменные окружения](#переменные-окружения)
 - [Management-команды](#management-команды)
 - [API](#api)
 - [Тестирование](#тестирование)
+- [Проверка проекта](#проверка-проекта)
+- [CI](#ci)
 - [Структура проекта](#структура-проекта)
 
 ## Архитектура
@@ -64,6 +69,41 @@ management-командах.
 - **Граф и алгоритмы:** NetworkX (PageRank, коллаборативная фильтрация)
 - **Документация API:** drf-spectacular (OpenAPI/Swagger)
 - **Деплой:** Docker, docker-compose, nginx, gunicorn
+- **Архитектура контейнеров:** PostgreSQL + Django/Gunicorn + Nginx
+
+## Модель данных
+
+Основные сущности системы:
+
+| Модель | Назначение |
+|---|---|
+| `users.User` | Пользователь системы (кастомная модель на базе `AbstractUser`) |
+| `catalog.Product` | Товар каталога: название, описание, категория, цена |
+| `interactions.Interaction` | Связь пользователя с товаром и история взаимодействий |
+| `recommender.RecommendationModel` | Метаданные обученной модели и её сохранённое состояние |
+| `recommender.RecommendationResult` | Предвычисленная рекомендация товара пользователю |
+
+### Веса взаимодействий
+
+Каждому типу взаимодействия соответствует числовой вес:
+
+| Тип | Вес |
+|---|---:|
+| `VIEW` | 1.0 |
+| `CART` | 3.0 |
+| `PURCHASE` | 5.0 |
+
+Вес пересчитывается автоматически при сохранении `Interaction`.
+При построении графа повторные взаимодействия одной пары
+`user + product` агрегируются по сумме весов.
+
+Например:
+
+```text
+VIEW + CART + PURCHASE = 1 + 3 + 5 = 9
+```
+
+Так граф хранит не только факт взаимодействия, но и его силу.
 
 ## Алгоритмы рекомендаций
 
@@ -72,10 +112,110 @@ management-командах.
 | **PageRank** (Personalized PageRank) | Случайное блуждание по графу с "телепортацией" в узел пользователя | Учитывает многошаговые связи, устойчив к шуму | Дороже в вычислении на больших графах |
 | **Collaborative Filtering** (граф, коэффициент Жаккара) | Поиск похожих пользователей через общих соседей 2-го порядка | Просто и быстро, легко объяснить | Хуже работает при малом числе пересечений (холодный старт) |
 
+### Параметры реализации
+
+Для Personalized PageRank используются параметры по умолчанию:
+`alpha=0.85`, `max_iter=30`, `tol=1e-4`. Персонализация задаётся на узле
+целевого пользователя, а вес рёбер графа учитывается при расчёте PageRank.
+Уже просмотренные пользователем товары исключаются из итоговой выдачи.
+
+Collaborative Graph использует коэффициент Жаккара между множествами
+товаров двух пользователей. Итоговый score кандидата увеличивается как
+`similarity * weight`, после чего рекомендации сортируются по score.
+Товары, уже присутствующие в истории целевого пользователя, не добавляются
+в результат.
+
 Метрики качества (Precision@K, Recall@K, NDCG@K) считаются на
-хронологическом train/test split — модель обучается на всех
-взаимодействиях пользователя кроме последних N%, которые используются как
-эталон для оценки (см. `compare_algorithms`).
+хронологическом train/test split. По умолчанию последние 20% взаимодействий
+каждого пользователя выделяются в test, а оставшиеся 80% используются для
+построения обучающего графа. Пользователи с историей менее 5 взаимодействий
+целиком остаются в train, поскольку для них отдельная test-выборка слишком
+мала. Реализация находится в `compare_algorithms`.
+
+В `BaseRecommender` предусмотрен `recommend_many()`. Для небольших наборов
+пользователей используется последовательный расчёт, а для 20 и более
+пользователей — `ProcessPoolExecutor`, чтобы параллельно считать рекомендации
+на нескольких CPU-ядрах.
+
+## Production и оценка
+
+В проекте разделены два сценария работы.
+
+**Production pipeline:**
+
+```text
+train_model
+    -> граф из БД
+    -> fit алгоритма
+    -> состояние модели (.pkl)
+    -> RecommendationModel
+    -> precompute_recommendations
+    -> RecommendationResult
+    -> GET /api/recommendations/
+```
+
+API не запускает алгоритм рекомендации заново на каждый HTTP-запрос.
+Он читает предвычисленные `RecommendationResult` из PostgreSQL.
+
+**Evaluation pipeline:**
+
+```text
+Interaction
+    -> chronological train/test split
+    -> train-граф только из train
+    -> fit алгоритма
+    -> рекомендации для test-пользователей
+    -> Precision@K / Recall@K / NDCG@K
+```
+
+Для оценки production-результаты не переиспользуются: алгоритм строится
+на train-графе, а test используется только для проверки качества. Это
+исключает утечку будущих взаимодействий в граф, по которому строятся
+рекомендации.
+
+
+## Результаты эксперимента
+
+Эксперимент выполнен на датасете **MovieLens 100K** после импорта в модели
+Django. В импортированной выборке: **943 пользователя, 1682 фильма и
+100 000 взаимодействий**. Для оценки использовался хронологический split с
+`test_ratio=0.2` и `K=10`. Фактические размеры выборок после применения
+правила для пользователей с малой историей: **79 619 train** и **20 381
+test** взаимодействие.
+
+### Качество
+
+| Алгоритм | Precision@10 | Recall@10 | NDCG@10 |
+|---|---:|---:|---:|
+| PageRank | 0.1238 | 0.0825 | 0.1437 |
+| Collaborative Graph | 0.1416 | 0.0964 | 0.1646 |
+
+В этом эксперименте Collaborative Graph дал на **0.0178** больше Precision,
+на **0.0139** больше Recall и на **0.0209** больше NDCG по сравнению с
+PageRank. Это разница именно для данной выборки, параметров и способа
+оценки; она не является гарантией для других датасетов.
+
+### Время
+
+Сравнительный эксперимент выполнялся так: один раз строился train/test split,
+далее строился граф только из train, после чего рекомендации для тестовых
+пользователей рассчитывались параллельно через `ProcessPoolExecutor`.
+
+| Алгоритм | Время эксперимента |
+|---|---:|
+| PageRank | 35.54 сек. |
+| Collaborative Graph | 22.65 сек. |
+
+Отдельно измерено полное предвычисление top-10 рекомендаций для всех 943
+пользователей, включая запись **9 430 результатов** каждого алгоритма в БД:
+
+| Алгоритм | Время precompute | Сохранено |
+|---|---:|---:|
+| PageRank | 51.20 сек. | 9 430 |
+| Collaborative Graph | 24.40 сек. | 9 430 |
+
+В API выдача берётся из `RecommendationResult`, поэтому эти вычисления
+выполняются заранее, а не на каждый HTTP-запрос.
 
 ## Быстрый старт (Docker)
 
@@ -101,15 +241,27 @@ docker compose exec web python manage.py createsuperuser
 # наполнить БД синтетическими данными
 docker compose exec web python manage.py seed_data --users 200 --products 500
 
-# обучить модели и предвычислить рекомендации
-docker compose exec web python manage.py train_model --algorithm=pagerank
-docker compose exec web python manage.py train_model --algorithm=collaborative
-docker compose exec web python manage.py precompute_recommendations --algorithm=pagerank
-docker compose exec web python manage.py precompute_recommendations --algorithm=collaborative
+# обучить актуальные версии моделей
+docker compose exec web python manage.py train_model --algorithm=pagerank --model-version=latest
+docker compose exec web python manage.py train_model --algorithm=collaborative --model-version=latest
+
+# предвычислить top-10 для всех пользователей
+docker compose exec web python manage.py precompute_recommendations --algorithm=pagerank --model-version=latest --top-k=10
+docker compose exec web python manage.py precompute_recommendations --algorithm=collaborative --model-version=latest --top-k=10
 ```
 
 Приложение доступно на `http://localhost/` (через nginx), админка — на
 `http://localhost/admin/`, документация API — на `http://localhost/api/docs/`.
+
+Для MovieLens 100K датасет ожидается в локальной папке `ml-100k/`. В
+`docker-compose.yml` она монтируется в контейнер `web` как `/app/ml-100k`
+в режиме read-only, поэтому датасет не попадает в Docker-образ.
+
+После помещения датасета в `ml-100k/` его можно импортировать так:
+
+```bash
+docker compose exec web python manage.py import_movielens --path ml-100k
+```
 
 Логи:
 
@@ -164,13 +316,19 @@ python manage.py runserver
 | `train_model --algorithm=<name> --model-version=<v>` | Обучает модель, сохраняет состояние в `storage/models/`, помечает как активную |
 | `precompute_recommendations --algorithm=<name> --model-version=<v> --top-k=N` | Пересчитывает и кэширует рекомендации для всех пользователей в БД |
 | `compare_algorithms --algorithm=<name> --k=N` | Хронологический train/test split, расчёт Precision@K/Recall@K/NDCG@K |
-| `run_experiment --k=N` | Полный цикл: обучает все зарегистрированные алгоритмы и сравнивает их метрики |
+| `run_experiment --k=N` | Обучает реализованные алгоритмы PageRank и Collaborative Graph и сравнивает их метрики |
 
 Пример полного цикла:
 
 ```bash
 python manage.py seed_data --users 300 --products 600
 python manage.py run_experiment --k 10
+
+# Для реального датасета MovieLens 100K:
+python manage.py import_movielens --path ml-100k
+python manage.py run_experiment --k 10
+python manage.py precompute_recommendations --algorithm=pagerank --model-version=latest --top-k=10
+python manage.py precompute_recommendations --algorithm=collaborative --model-version=latest --top-k=10
 ```
 
 ## API
@@ -193,7 +351,7 @@ curl "http://localhost/api/recommendations/?user_id=1&algorithm=pagerank&top_k=5
 ```json
 {
   "algorithm": "pagerank",
-  "version": "1",
+  "version": "latest",
   "results": [
     {"product": {"id": 42, "title": "Товар 42", "price": "1999.00"}, "score": 0.031},
     ...
@@ -225,6 +383,45 @@ docker compose exec web python manage.py test
 - `recommender/tests/test_graph_builder.py` — построение графа из БД
 - `recommender/tests/test_pagerank.py`, `test_collaborative.py` — алгоритмы на синтетических графах
 - `recommender/tests/test_api.py` — интеграционные тесты API
+- `recommender/tests/test_evaluation.py` — Precision@K, Recall@K, NDCG@K
+- `recommender/tests/test_models.py`, `test_serializers.py`, `test_registry.py` — модели, сериализаторы и реестр алгоритмов
+
+## Проверка проекта
+
+Перед финальной версией проекта выполнены проверки:
+
+```text
+flake8 .
+# без ошибок
+
+black --check .
+# форматирование соответствует Black
+
+python manage.py test
+# 68 тестов, OK
+
+python manage.py check
+# без ошибок
+
+python manage.py makemigrations --check --dry-run
+# No changes detected
+
+mypy .
+# без ошибок
+```
+
+## CI
+
+В репозитории настроен GitHub Actions workflow `.github/workflows/ci.yml`.
+
+При push в `main` и `feature/optimisation`, а также при pull request в `main`,
+CI выполняет две стадии:
+
+1. `lint` — установка зависимостей, `flake8 .` и `black --check .`.
+2. `test` — запуск PostgreSQL 16 как service и `python manage.py test`.
+
+Так базовые проверки стиля и тесты запускаются автоматически до интеграции
+изменений в `main`.
 
 ## Структура проекта
 

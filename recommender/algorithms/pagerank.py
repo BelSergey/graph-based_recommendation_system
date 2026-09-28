@@ -1,38 +1,51 @@
+# recommender/algorithms/pagerank.py
+
+import heapq
+
 import networkx as nx
+
 from .base import BaseRecommender
 
 
 class PageRankRecommender(BaseRecommender):
+    """Ранжирует товары персонализированным PageRank."""
+
     algorithm_name = "pagerank"
 
-    def __init__(self, alpha: float = 0.85):
+    def __init__(
+        self, alpha: float = 0.85, max_iter: int = 30, tol: float = 1e-4
+    ) -> None:
+        """Инициализирует рекомендатор."""
         self.alpha = alpha
+        self.max_iter = max_iter
+        self.tol = tol
         self.graph: nx.Graph | None = None
 
     def fit(self, graph: nx.Graph) -> None:
+        """Сохраняет граф взаимодействий для рекомендаций."""
         self.graph = graph
 
     def recommend(self, user_id: int, top_k: int = 10) -> list[tuple[int, float]]:
+        """Возвращает top-k товаров для пользователя."""
         user_node = f"u_{user_id}"
         if self.graph is None or user_node not in self.graph:
             return []
 
-        personalization = {node: 0 for node in self.graph.nodes}
-        personalization[user_node] = 1
-
+        personalization = {user_node: 1.0}
         scores = nx.pagerank(
             self.graph,
             alpha=self.alpha,
             personalization=personalization,
             weight="weight",
+            max_iter=self.max_iter,
+            tol=self.tol,
         )
 
         already_seen = set(self.graph.neighbors(user_node))
-        product_scores = [
+        product_scores = (
             (int(node[2:]), score)
             for node, score in scores.items()
             if node.startswith("p_") and node not in already_seen
-        ]
+        )
 
-        product_scores.sort(key=lambda x: x[1], reverse=True)
-        return product_scores[:top_k]
+        return heapq.nlargest(top_k, product_scores, key=lambda item: item[1])

@@ -1,5 +1,5 @@
 import random
-from datetime import timedelta
+from datetime import timedelta, datetime
 from django.core.management.base import BaseCommand
 from django.contrib.auth import get_user_model
 from django.utils import timezone
@@ -9,7 +9,7 @@ from interactions.models import Interaction, InteractionType
 User = get_user_model()
 
 
-def random_past_timestamp(days_back: int = 180):
+def random_past_timestamp(days_back: int = 180) -> datetime:
     delta = timedelta(
         days=random.randint(0, days_back),
         hours=random.randint(0, 23),
@@ -19,14 +19,18 @@ def random_past_timestamp(days_back: int = 180):
 
 
 class Command(BaseCommand):
+    """Генерирует пользователей, товары и взаимодействия."""
+
     help = "Генерирует синтетические данные для графа рекомендаций"
 
-    def add_arguments(self, parser):
+    def add_arguments(self, parser) -> None:
+        """Добавляет аргументы команды."""
         parser.add_argument("--users", type=int, default=200)
         parser.add_argument("--products", type=int, default=500)
         parser.add_argument("--interactions", type=int, default=5000)
 
-    def handle(self, *args, **options):
+    def handle(self, *args, **options) -> None:
+        """Выполняет management-команду."""
         categories = [
             Category.objects.get_or_create(name=name)[0]
             for name in ["Электроника", "Одежда", "Дом", "Спорт", "Книги"]

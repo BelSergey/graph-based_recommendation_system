@@ -1,9 +1,8 @@
 import os
 import csv
-from datetime import datetime
+from datetime import datetime, timezone as dt_timezone
 from django.core.management.base import BaseCommand
 from django.contrib.auth import get_user_model
-from django.utils.timezone import make_aware
 from catalog.models import Category, Product
 from interactions.models import Interaction, InteractionType
 
@@ -11,9 +10,12 @@ User = get_user_model()
 
 
 class Command(BaseCommand):
+    """Импортирует данные MovieLens в PostgreSQL."""
+
     help = "Импортирует датасет MovieLens 100k с сохранением исторических дат и типов"
 
     def add_arguments(self, parser):
+        """Добавляет аргументы команды."""
         parser.add_argument(
             "--path",
             type=str,
@@ -22,6 +24,7 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
+        """Выполняет management-команду."""
         dataset_path = options["path"]
         users_file = os.path.join(dataset_path, "u.user")
         items_file = os.path.join(dataset_path, "u.item")
@@ -75,8 +78,7 @@ class Command(BaseCommand):
                 if old_u_id not in user_id_map or old_i_id not in product_id_map:
                     continue
 
-                dt = datetime.fromtimestamp(int(timestamp))
-                dt_aware = make_aware(dt)
+                dt_aware = datetime.fromtimestamp(int(timestamp), tz=dt_timezone.utc)
 
                 interactions_to_create.append(
                     Interaction(

@@ -10,9 +10,12 @@ User = get_user_model()
 
 
 class Command(BaseCommand):
+    """Импортирует данные MovieLens в PostgreSQL."""
+
     help = "Импортирует датасет MovieLens 100k с сохранением исторических дат и типов"
 
     def add_arguments(self, parser):
+        """Добавляет аргументы команды."""
         parser.add_argument(
             "--path",
             type=str,
@@ -21,6 +24,7 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
+        """Выполняет management-команду."""
         dataset_path = options["path"]
         users_file = os.path.join(dataset_path, "u.user")
         items_file = os.path.join(dataset_path, "u.item")

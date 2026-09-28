@@ -6,11 +6,12 @@ from .base import BaseRecommender
 class CollaborativeGraphRecommender(BaseRecommender):
     algorithm_name = "collaborative"
 
-    def __init__(self):
+    def __init__(self) -> None:
+        """Инициализирует рекомендатор."""
         self.graph: nx.Graph | None = None
-        self.recommend_calls = 0
 
     def fit(self, graph: nx.Graph) -> None:
+        """Сохраняет граф взаимодействий для рекомендаций."""
         self.graph = graph
 
     def _jaccard(self, set_a: set, set_b: set) -> float:
@@ -27,7 +28,7 @@ class CollaborativeGraphRecommender(BaseRecommender):
         user_id: int,
         top_k: int = 10,
     ) -> list[tuple[int, float]]:
-        self.recommend_calls += 1
+        """Возвращает top-k товаров для пользователя."""
 
         user_node = f"u_{user_id}"
         if self.graph is None or user_node not in self.graph:
@@ -35,7 +36,7 @@ class CollaborativeGraphRecommender(BaseRecommender):
 
         target_products = set(self.graph.neighbors(user_node))
 
-        candidate_users = set()
+        candidate_users: set[str] = set()
         for product in target_products:
             candidate_users.update(self.graph.neighbors(product))
         candidate_users.discard(user_node)

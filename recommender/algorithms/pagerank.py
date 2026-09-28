@@ -8,21 +8,25 @@ from .base import BaseRecommender
 
 
 class PageRankRecommender(BaseRecommender):
+    """Ранжирует товары персонализированным PageRank."""
+
     algorithm_name = "pagerank"
 
-    def __init__(self, alpha: float = 0.85, max_iter: int = 30, tol: float = 1e-4):
+    def __init__(
+        self, alpha: float = 0.85, max_iter: int = 30, tol: float = 1e-4
+    ) -> None:
+        """Инициализирует рекомендатор."""
         self.alpha = alpha
         self.max_iter = max_iter
         self.tol = tol
-        self.graph = None
-        self.recommend_calls = 0
+        self.graph: nx.Graph | None = None
 
     def fit(self, graph: nx.Graph) -> None:
+        """Сохраняет граф взаимодействий для рекомендаций."""
         self.graph = graph
 
     def recommend(self, user_id: int, top_k: int = 10) -> list[tuple[int, float]]:
-        self.recommend_calls += 1
-
+        """Возвращает top-k товаров для пользователя."""
         user_node = f"u_{user_id}"
         if self.graph is None or user_node not in self.graph:
             return []

@@ -4,7 +4,8 @@ from django.db.models import Sum
 
 
 def build_interaction_graph(min_weight: float = 0.0) -> nx.Graph:
-    graph = nx.Graph()
+    """Строит взвешенный двудольный граф из взаимодействий."""
+    graph: nx.Graph = nx.Graph()
 
     aggregated = Interaction.objects.values("user_id", "product_id").annotate(
         total_weight=Sum("weight")

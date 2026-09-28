@@ -5,6 +5,8 @@ from catalog.models import Product
 
 
 class InteractionType(models.TextChoices):
+    """Типы взаимодействий пользователя с товаром."""
+
     VIEW = "view", "Просмотр"
     CART = "cart", "В корзину"
     PURCHASE = "purchase", "Покупка"
@@ -18,6 +20,8 @@ WEIGHTS = {
 
 
 class Interaction(models.Model):
+    """Взаимодействие пользователя с товаром."""
+
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     type = models.CharField(max_length=16, choices=InteractionType.choices)
@@ -30,6 +34,8 @@ class Interaction(models.Model):
             models.Index(fields=["product"]),
         ]
 
-    def save(self, *args, **kwargs):
-        self.weight = WEIGHTS[self.type]
+    def save(self, *args, **kwargs) -> None:
+        """Пересчитывает вес взаимодействия перед сохранением."""
+        interaction_type = InteractionType(self.type)
+        self.weight = WEIGHTS[interaction_type]
         super().save(*args, **kwargs)

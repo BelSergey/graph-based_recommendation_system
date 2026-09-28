@@ -2,6 +2,7 @@ import math
 
 
 def precision_at_k(recommended: list[int], relevant: set[int], k: int) -> float:
+    """Вычисляет Precision@K."""
     top_k = recommended[:k]
     if not top_k:
         return 0.0
@@ -10,6 +11,7 @@ def precision_at_k(recommended: list[int], relevant: set[int], k: int) -> float:
 
 
 def recall_at_k(recommended: list[int], relevant: set[int], k: int) -> float:
+    """Вычисляет Recall@K."""
     if not relevant:
         return 0.0
     top_k = recommended[:k]
@@ -18,6 +20,7 @@ def recall_at_k(recommended: list[int], relevant: set[int], k: int) -> float:
 
 
 def ndcg_at_k(recommended: list[int], relevant: set[int], k: int) -> float:
+    """Вычисляет NDCG@K."""
     dcg = 0.0
     for i, item in enumerate(recommended[:k]):
         if item in relevant:

@@ -1,5 +1,3 @@
-
-
 from collections import defaultdict
 
 from django.core.exceptions import ObjectDoesNotExist
@@ -18,17 +16,21 @@ MIN_INTERACTIONS_FOR_TEST_SPLIT = 5
 
 
 class Command(BaseCommand):
+    """Выполняет оценку качества рекомендательного алгоритма."""
+
     help = (
         "Хронологический train/test split по каждому пользователю, "
         "расчёт Precision@K/Recall@K/NDCG@K и сохранение метрик в активную модель"
     )
 
     def add_arguments(self, parser):
+        """Добавляет аргументы команды."""
         parser.add_argument("--algorithm", required=True)
         parser.add_argument("--k", type=int, default=10)
         parser.add_argument("--test-ratio", type=float, default=0.2)
 
     def handle(self, *args, **options):
+        """Выполняет management-команду."""
         started_at = perf_counter()
         algorithm = options["algorithm"]
         k = options["k"]
@@ -66,10 +68,12 @@ class Command(BaseCommand):
 
             overlap = train_products & test_products
             if overlap:
-                self.stdout.write(self.style.WARNING(
-                    f"User {user.id}: {len(overlap)} товаров пересекаются между train и test "
-                    f"(вероятно, повторные Interaction с одним товаром в разное время)"
-                ))
+                self.stdout.write(
+                    self.style.WARNING(
+                        f"User {user.id}: {len(overlap)} товаров пересекаются между train и test "
+                        f"(вероятно, повторные Interaction с одним товаром в разное время)"
+                    )
+                )
 
         if not test_interactions:
             self.stdout.write(
@@ -187,8 +191,6 @@ class Command(BaseCommand):
                 f"{fit_finished_at - graph_finished_at:.3f} сек."
                 f"\n  Evaluation: "
                 f"{evaluation_finished_at - evaluation_started_at:.3f} сек."
-                f"\n  Recommend calls: "
-                f"{recommender.recommend_calls}"
                 f"\n  Total:      "
                 f"{finished_at - started_at:.3f} сек."
             )
@@ -201,7 +203,7 @@ def build_interaction_graph_from_interactions(interactions) -> "nx.Graph":
     как build_interaction_graph()) — нужно, чтобы обучать модель строго
     на train-выборке, не подглядывая в test.
     """
-    graph = nx.Graph()
+    graph: nx.Graph = nx.Graph()
     for interaction in interactions:
         u_node = f"u_{interaction.user_id}"
         p_node = f"p_{interaction.product_id}"

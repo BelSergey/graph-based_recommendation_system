@@ -10,13 +10,17 @@ from recommender.models import RecommendationModel
 
 
 class Command(BaseCommand):
+    """Обучает и активирует модель рекомендаций."""
+
     help = "Обучает модель рекомендаций и сохраняет её состояние"
 
     def add_arguments(self, parser):
+        """Добавляет аргументы команды."""
         parser.add_argument("--algorithm", required=True)
-        parser.add_argument("--model-version", default="1")
+        parser.add_argument("--model-version", default="latest")
 
     def handle(self, *args, **options):
+        """Выполняет management-команду."""
         algorithm = options["algorithm"]
         version = options["model_version"]
 

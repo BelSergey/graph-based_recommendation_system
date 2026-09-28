@@ -4,6 +4,8 @@ from catalog.models import Product
 
 
 class RecommendationModel(models.Model):
+    """Метаданные обученной рекомендательной модели."""
+
     algorithm = models.CharField(max_length=32)
     version = models.CharField(max_length=32)
     trained_at = models.DateTimeField(auto_now_add=True)
@@ -22,11 +24,13 @@ class RecommendationModel(models.Model):
             ),
         ]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.algorithm} v{self.version}"
 
 
 class RecommendationResult(models.Model):
+    """Предвычисленная рекомендация товара пользователю."""
+
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     model = models.ForeignKey(RecommendationModel, on_delete=models.CASCADE)
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
